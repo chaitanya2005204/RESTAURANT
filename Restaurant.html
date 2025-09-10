@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sol & Spice — Restaurant Demo</title>
+  <meta name="description" content="Single-file restaurant website with menu, reservations, gallery and admin demo (frontend only)" />
+  <style>
+    :root{ --bg:#FFF8F2; --card:#ffffff; --muted:#6b7280; --accent:#e85d04; --accent-2:#ffb703; --glass:rgba(0,0,0,0.04); font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#0f1724 }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#fffaf0 0%, #fff8f2 100%)}
+    .container{max-width:1100px;margin:28px auto;padding:20px}
+
+    header{display:flex;align-items:center;gap:18px}
+    .brand{display:flex;flex-direction:column}
+    .brand h1{margin:0;font-size:22px}
+    .brand p{margin:0;color:var(--muted);font-size:13px}
+
+    nav{margin-left:auto;display:flex;gap:8px;align-items:center}
+    nav a{padding:8px 12px;border-radius:8px;text-decoration:none;color:inherit;font-weight:600}
+    nav a.btn{background:var(--accent);color:white}
+
+    main{display:grid;grid-template-columns:1fr 360px;gap:18px;margin-top:18px}
+
+    /* Hero */
+    .hero{background:linear-gradient(90deg,#fff 0%, rgba(255,255,255,0.7) 100%);padding:20px;border-radius:14px;display:flex;gap:20px;align-items:center}
+    .hero .copy h2{margin:0 0 8px 0;font-size:24px}
+    .hero .copy p{margin:0;color:var(--muted)}
+    .hero img{width:220px;height:140px;border-radius:12px;object-fit:cover}
+
+    /* Menu */
+    .menu{background:var(--card);padding:14px;border-radius:12px}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    .chip{background:var(--glass);padding:8px 12px;border-radius:999px;cursor:pointer;color:var(--muted)}
+    .chip.active{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white}
+
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+    .dish{display:flex;gap:12px;padding:10px;border-radius:10px;background:linear-gradient(180deg,#fff,#fff);box-shadow:0 6px 18px rgba(16,24,40,0.04)}
+    .dish img{width:86px;height:86px;border-radius:8px;object-fit:cover}
+    .dish .meta h3{margin:0;font-size:15px}
+    .dish .meta p{margin:6px 0 0 0;color:var(--muted);font-size:13px}
+    .dish .price{margin-left:auto;font-weight:800}
+    .dish .actions{margin-top:10px;display:flex;gap:8px}
+    .btn{background:var(--accent);border:0;padding:8px 12px;border-radius:8px;color:white;cursor:pointer}
+
+    /* Sidebar (reservations + contact) */
+    .panel{background:var(--card);padding:14px;border-radius:12px}
+    .panel h3{margin:0 0 8px 0}
+    label{display:block;font-size:13px;color:var(--muted);margin-top:8px}
+    input,textarea,select{width:100%;padding:8px;border-radius:8px;border:1px solid #eef2ff;margin-top:6px}
+
+    .reservations-list{max-height:240px;overflow:auto;margin-top:10px}
+    .reservation{padding:8px;border-bottom:1px dashed rgba(0,0,0,0.06)}
+
+    /* Gallery */
+    .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+    .gallery img{width:100%;height:100px;object-fit:cover;border-radius:8px}
+
+    footer{text-align:center;color:var(--muted);margin-top:18px}
+
+    @media (max-width:920px){ main{grid-template-columns:1fr} .hero img{display:none} .gallery{grid-template-columns:repeat(2,1fr)} }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1>Sol & Spice</h1>
+        <p>A small coastal restaurant — fresh, local, seasonal.</p>
+      </div>
+      <nav>
+        <a href="#menu" class="link">Menu</a>
+        <a href="#reserve" class="link">Reserve</a>
+        <a id="adminToggle" class="btn">Admin</a>
+      </nav>
+    </header>
+
+    <main>
+      <section>
+        <div class="hero">
+          <div class="copy">
+            <h2>Welcome to Sol & Spice</h2>
+            <p>Contemporary coastal cuisine — chef-driven tasting menu, small plates, and a warm evening ambience. Browse the menu or make a quick reservation.</p>
+            <div style="margin-top:12px"><button class="btn" onclick="scrollTo('#menu')">See Menu</button></div>
+          </div>
+          <img src="https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=8a6b0a" alt="restaurant"/>
+        </div>
+
+        <div id="menu" class="menu" style="margin-top:14px">
+          <div class="controls" id="categoryControls"></div>
+          <div class="grid" id="menuGrid"></div>
+        </div>
+
+        <div class="panel" style="margin-top:12px">
+          <h3>Gallery</h3>
+          <div class="gallery" id="gallery"></div>
+        </div>
+      </section>
+
+      <aside>
+        <div id="reserve" class="panel">
+          <h3>Make a Reservation</h3>
+          <label>Name</label>
+          <input id="r_name" placeholder="Your name" />
+          <label>Phone</label>
+          <input id="r_phone" placeholder="Phone number" />
+          <label>Date & Time</label>
+          <input id="r_datetime" type="datetime-local" />
+          <label>Guests</label>
+          <select id="r_guests"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+          <button class="btn" style="margin-top:10px" id="reserveBtn">Reserve</button>
+
+          <div style="margin-top:12px">
+            <h4 style="margin:0 0 8px 0">Upcoming Reservations</h4>
+            <div class="reservations-list" id="reservationsList"></div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:12px">
+          <h3>Contact</h3>
+          <p class="muted">123 Sea Lane, Harbor City<br/>Open: Tue–Sun, 12:00–22:30</p>
+          <label>Message</label>
+          <textarea id="contactMsg" rows="3" placeholder="Ask about events or private bookings"></textarea>
+          <button class="btn" style="margin-top:8px" id="sendMsg">Send</button>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      Demo restaurant site — frontend only. Data stored locally in your browser for demo purposes.
+    </footer>
+  </div>
+
+  <script>
+    /********** Demo data **********/
+    const SAMPLE_MENU = [
+      {id:1, name:'Grilled Sea Bass', desc:'Local catch, lemon-herb butter, seasonal veg', cat:'Mains', price:749, image:'https://images.unsplash.com/photo-1543353071-087092ec393f?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=11'},
+      {id:2, name:'Charred Octopus', desc:'Smoky paprika, chickpea purée', cat:'Starters', price:499, image:'https://images.unsplash.com/photo-1542444459-db1f38a7a0c9?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=22'},
+      {id:3, name:'Mango Ceviche', desc:'Citrus, mango, coriander', cat:'Starters', price:349, image:'https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=33'},
+      {id:4, name:'Herb Tagliatelle', desc:'Handmade pasta, basil cream, pangrattato', cat:'Mains', price:599, image:'https://images.unsplash.com/photo-1525755662778-989d0524087e?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=44'},
+      {id:5, name:'Burnt Lemon Tart', desc:'Shortcrust, torched meringue', cat:'Desserts', price:289, image:'https://images.unsplash.com/photo-1563805042-7684c019e1cb?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=55'},
+      {id:6, name:'House Salad', desc:'Seasonal leaves, vinaigrette', cat:'Sides', price:199, image:'https://images.unsplash.com/photo-1551183053-bf91a1d81141?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=66'}
+    ];
+
+    const GALLERY_PHOTOS = [
+      'https://images.unsplash.com/photo-1541542684-18db3f7e0a22?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=1',
+      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=2',
+      'https://images.unsplash.com/photo-1496417263034-38ec4f0b665a?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=3',
+      'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=4',
+      'https://images.unsplash.com/photo-1528605248644-14dd04022da1?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=5',
+      'https://images.unsplash.com/photo-1499428665502-503b3d4f3b6b?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=6'
+    ];
+
+    /********** App state (persisted) **********/
+    const state = {
+      menu: JSON.parse(localStorage.getItem('rs_menu') || JSON.stringify(SAMPLE_MENU)),
+      reservations: JSON.parse(localStorage.getItem('rs_reservations') || '[]'),
+      messages: JSON.parse(localStorage.getItem('rs_messages') || '[]'),
+      adminMode: false,
+      filter: 'All'
+    };
+
+    /********** Helpers **********/
+    function el(id){ return document.getElementById(id); }
+    function priceFmt(n){ return '₹' + Number(n).toFixed(2); }
+    function scrollTo(sel){ document.querySelector(sel).scrollIntoView({behavior:'smooth', block:'center'}); }
+
+    /********** Render categories & menu **********/
+    const categories = ['All', ...Array.from(new Set(state.menu.map(m=>m.cat)))]
+    function renderCategories(){
+      const wrap = el('categoryControls'); wrap.innerHTML='';
+      categories.forEach(cat=>{
+        const b = document.createElement('button'); b.className='chip ' + (state.filter===cat?'active':''); b.textContent = cat;
+        b.onclick = ()=>{ state.filter = cat; renderCategories(); renderMenu(); }
+        wrap.appendChild(b);
+      });
+    }
+
+    function renderMenu(){
+      const grid = el('menuGrid'); grid.innerHTML = '';
+      const list = state.menu.filter(it => state.filter==='All' || it.cat===state.filter);
+      list.forEach(it=>{
+        const d = document.createElement('div'); d.className='dish';
+        d.innerHTML = `
+          <img src="${it.image}" alt="${it.name}" />
+          <div style="flex:1">
+            <div style="display:flex;gap:8px;align-items:center"><h3 style="margin:0">${it.name}</h3><div class="muted" style="margin-left:8px">${it.cat}</div></div>
+            <p class="muted">${it.desc}</p>
+            <div class="actions">
+              <strong class="price">${priceFmt(it.price)}</strong>
+              <button class="btn" onclick="order('${it.id}')">Order</button>
+              ${state.adminMode ? `<button style="background:#ef4444;color:white;border:0;padding:8px;border-radius:8px" onclick="deleteDish(${it.id})">Delete</button>` : ''}
+            </div>
+          </div>
+        `;
+        grid.appendChild(d);
+      });
+
+      // if admin mode, show add dish form at top
+      if(state.adminMode){
+        const addForm = document.createElement('div'); addForm.style.marginBottom='12px';
+        addForm.innerHTML = `
+          <div style="padding:10px;border-radius:8px;background:linear-gradient(180deg,#fff,#fff)">
+            <h4 style="margin:0 0 8px 0">Add Dish (Admin)</h4>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <input id="new_name" placeholder="Name" />
+              <input id="new_cat" placeholder="Category" />
+              <input id="new_price" placeholder="Price" />
+              <input id="new_image" placeholder="Image URL" />
+            </div>
+            <button class="btn" style="margin-top:8px" onclick="addDish()">Add Dish</button>
+          </div>
+        `;
+        grid.prepend(addForm);
+      }
+    }
+
+    /********** Gallery **********/
+    function renderGallery(){
+      const g = el('gallery'); g.innerHTML='';
+      GALLERY_PHOTOS.forEach(src=>{ const img = document.createElement('img'); img.src=src; g.appendChild(img); })
+    }
+
+    /********** Reservations **********/
+    function renderReservations(){
+      const list = el('reservationsList'); list.innerHTML='';
+      if(state.reservations.length===0){ list.innerHTML = '<div class="muted">No reservations yet</div>'; return; }
+      state.reservations.slice().reverse().forEach(r=>{
+        const div = document.createElement('div'); div.className='reservation';
+        div.innerHTML = `<strong>${r.name}</strong> · ${r.guests} guests<br/><span class="muted">${new Date(r.datetime).toLocaleString()} · ${r.phone}</span>`;
+        list.appendChild(div);
+      });
+    }
+
+    el('reserveBtn').onclick = ()=>{
+      const name = el('r_name').value.trim(); const phone = el('r_phone').value.trim(); const datetime = el('r_datetime').value; const guests = el('r_guests').value;
+      if(!name || !phone || !datetime){ alert('Please fill name, phone and date/time.'); return; }
+      const reservation = {id: Date.now(), name, phone, datetime, guests};
+      state.reservations.push(reservation);
+      localStorage.setItem('rs_reservations', JSON.stringify(state.reservations));
+      renderReservations();
+      el('r_name').value=''; el('r_phone').value=''; el('r_datetime').value='';
+      alert('Reservation saved — thank you!');
+    }
+
+    /********** Contact messages **********/
+    el('sendMsg').onclick = ()=>{
+      const msg = el('contactMsg').value.trim(); if(!msg){ alert('Type a message first.'); return; }
+      state.messages.push({id:Date.now(), message: msg, sentAt: new Date().toISOString()});
+      localStorage.setItem('rs_messages', JSON.stringify(state.messages));
+      el('contactMsg').value=''; alert('Message saved. We will get back to you.');
+    }
+
+    /********** Ordering (demo) **********/
+    function order(id){ const item = state.menu.find(m=>String(m.id)===String(id)); if(!item) return alert('Item not found.');
+      // Demo: store lastOrder in localStorage
+      localStorage.setItem('rs_lastOrder', JSON.stringify({id:Date.now(), item, orderedAt: new Date().toISOString()}));
+      alert('Order placed for: ' + item.name + '\n(This is a demo; no payment or backend.)');
+    }
+
+    /********** Admin: add/delete dish **********/
+    function addDish(){
+      const name = el('new_name').value.trim(); const cat = el('new_cat').value.trim() || 'Uncategorized'; const price = parseFloat(el('new_price').value) || 0; const image = el('new_image').value.trim() || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=2';
+      if(!name){ alert('Enter a dish name'); return; }
+      const id = Date.now(); state.menu.push({id,name,cat,price,image});
+      localStorage.setItem('rs_menu', JSON.stringify(state.menu));
+      // update categories
+      if(!categories.includes(cat)) categories.push(cat);
+      renderCategories(); renderMenu();
+      el('new_name').value=''; el('new_cat').value=''; el('new_price').value=''; el('new_image').value='';
+    }
+
+    function deleteDish(id){ if(!confirm('Delete this dish?')) return; state.menu = state.menu.filter(m=>m.id!==id); localStorage.setItem('rs_menu', JSON.stringify(state.menu)); renderMenu(); }
+
+    /********** Admin toggle **********/
+    el('adminToggle').onclick = ()=>{ state.adminMode = !state.adminMode; el('adminToggle').textContent = state.adminMode ? 'Exit Admin':'Admin'; renderMenu(); }
+
+    /********** Init render **********/
+    renderCategories(); renderMenu(); renderGallery(); renderReservations();
+
+    // expose small helpers for inline onclicks
+    window.addDish = addDish; window.deleteDish = deleteDish; window.order = order; window.scrollTo = scrollTo;
+  </script>
+</body>
+</html>
